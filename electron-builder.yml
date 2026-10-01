@@ -1,0 +1,39 @@
+appId: app.aira.desktop
+productName: AIRA
+icon: build/icon.png
+directories:
+  output: dist-desktop
+# Only the compiled Electron entry ships through asar — everything else
+# (Next standalone incl. traced node_modules) goes via extraResources below,
+# copied verbatim so native modules and require() resolution just work.
+# The exclusions matter: electron-builder would otherwise ALSO package all
+# production node_modules into the asar (~650MB of dead weight — the server
+# resolves everything from resources/next-app/node_modules instead).
+files:
+  - dist-electron/**
+  - package.json
+  - "!**/node_modules/**"
+  - "!**/dist-desktop/**"
+  - "!**/build/**"
+  - "!**/.next/**"
+  - "!**/src/**"
+  - "!**/scripts/**"
+  - "!**/electron/**"
+  - "!**/prisma/**"
+extraResources:
+  - from: build/next-app
+    to: next-app
+  # Bundled LiveKit voice-agent worker. Without this the packaged app cannot
+  # answer a dispatched call — it only shipped the Next server.
+  - from: build/agent
+    to: agent
+# We swap better-sqlite3 to Electron-ABI prebuilds ourselves
+# (scripts/swap-native.cjs) — no compilers required on the machine.
+npmRebuild: false
+buildDependenciesFromSource: false
+win:
+  target: nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: "AIRA-Setup-${version}.exe"

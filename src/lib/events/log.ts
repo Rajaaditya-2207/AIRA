@@ -1,0 +1,102 @@
+import type { EventLog } from "@prisma/client";
+
+import { db } from "@/lib/db";
+import { fromJsonText, toJsonText } from "@/lib/dbjson";
+import { fromDbInvestigationStatus, mapCallToProgressItem, mapTranscriptToLine } from "@/lib/mappers";
+import type { SSEEventPayload } from "@/lib/events";
+import { getCallRecordingUrlIfExists } from "@/lib/calls/recording-store";
+
+type PersistEventInput = {
+  investigationId: string;
+  callId?: string | null;
+  payload: SSEEventPayload;
+};
+
+export async function persistEvent({ investigationId, callId, payload }: PersistEventInput) {
+  await db.eventLog.create({
+    data: {
+      investigationId,
+      callId: callId ?? undefined,
+      eventType: payload.type,
+      payload: toJsonText(payload),
+    },
+  });
+}
+
+export async function getInvestigationSnapshot(investigationId: string) {
+  const investigation = await db.investigation.findUnique({
+    where: {
+      id: investigationId,
+    },
+    include: {
+      calls: {
+        orderBy: {
+          createdAt: "asc",
+        },
+        include: {
+          contact: true,
+        },
+      },
+    },
+  });
+
+  if (!investigation) {
+    return null;
+  }
+
+  const transcriptRows = await db.transcriptEvent.findMany({
+    where: {
+      call: {
+        investigationId,
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+    take: 500,
+  });
+
+  const calls = await Promise.all(
+    investigation.calls.map(async (call) => {
+      const recordingUrl = await getCallRecordingUrlIfExists(call.id);
+      return mapCallToProgressItem(call, { recordingUrl });
+    }),
+  );
+
+  return {
+    type: "investigation.snapshot" as const,
+    investigationId,
+    status: fromDbInvestigationStatus(investigation.status),
+    requirement: investigation.requirement,
+    calls,
+    transcripts: transcriptRows.map(mapTranscriptToLine),
+  };
+}
+
+export async function getEventsSince(investigationId: string, afterId: number) {
+  const rows = await db.eventLog.findMany({
+    where: {
+      investigationId,
+      id: {
+        gt: afterId,
+      },
+    },
+    orderBy: {
+      id: "asc",
+    },
+    take: 250,
+  });
+
+  return rows.map((row) => ({
+    cursor: row.id,
+    payload: parseEventPayload(row),
+  }));
+}
+
+function parseEventPayload(row: EventLog): SSEEventPayload {
+  return fromJsonText<SSEEventPayload>(row.payload, {
+    type: "investigation.failed",
+    investigationId: row.investigationId,
+    reason: "Stored event payload was malformed.",
+  });
+}

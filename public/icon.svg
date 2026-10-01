@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="AIRA">
+  <defs>
+    <linearGradient id="aira-bars" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="aira-sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1B1E27"/>
+      <stop offset="55%" stop-color="#14161D"/>
+      <stop offset="100%" stop-color="#0B0C10"/>
+    </linearGradient>
+    <radialGradient id="aira-ping" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#aira-sheen)"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="#262A35" stroke-width="6"/>
+
+  <!-- The Airwave A: three ascending bars forming the glyph -->
+  <g fill="url(#aira-bars)">
+    <rect x="150" y="300" width="52" height="130" rx="26"/>
+    <rect x="230" y="120" width="52" height="310" rx="26"/>
+    <rect x="310" y="220" width="52" height="210" rx="26"/>
+  </g>
+
+  <!-- Live ping above the tallest bar -->
+  <circle cx="256" cy="86" r="34" fill="url(#aira-ping)"/>
+  <circle cx="256" cy="86" r="12" fill="#22D3EE"/>
+</svg>
